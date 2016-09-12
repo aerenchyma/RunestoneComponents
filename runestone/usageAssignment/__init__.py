@@ -61,7 +61,7 @@ def visit_ua_node(self,node):
         for d in chapter_data:
             ch_name, sub_chs = d['ch'], d['sub_chs']
             s += '<div class="panel-heading">'
-            s += ch_name
+            s += '<span id="ch-name">{}</span>'.format(ch_name)
             s += '<ul class="list-group">'
             for sub_ch_name in sub_chs:
                 s += '<li class="simple">'
