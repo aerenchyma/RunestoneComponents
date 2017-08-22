@@ -20,7 +20,7 @@ import ast
 from numbers import Number
 from docutils import nodes
 from docutils.parsers.rst import directives
-from sphinx.util import logging
+# from sphinx.util import logging
 from runestone.server.componentdb import addQuestionToDB, addHTMLToDB
 from runestone.common import RunestoneDirective, RunestoneNode, get_node_line
 
