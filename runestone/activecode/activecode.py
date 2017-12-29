@@ -64,7 +64,10 @@ TEMPLATE_START = """
 """
 
 TEMPLATE_END = """
-<textarea data-component="activecode" id=%(divid)s data-lang="%(language)s" %(autorun)s %(hidecode)s %(include)s %(timelimit)s %(coach)s %(codelens)s data-audio='%(ctext)s' %(sourcefile)s %(datafile)s %(stdin)s %(gradebutton)s %(caption)s>
+<textarea data-component="activecode" id=%(divid)s data-lang="%(language)s" %(autorun)s
+    %(hidecode)s %(include)s %(timelimit)s %(coach)s %(codelens)s
+    data-audio='%(ctext)s' %(sourcefile)s %(datafile)s %(stdin)s
+    %(cargs)s %(largs)s %(rargs)s %(iargs)s %(gradebutton)s %(caption)s>
 %(initialcode)s
 </textarea>
 </div>
@@ -126,23 +129,22 @@ def purge_activecodes(app, env, docname):
 class ActiveCode(RunestoneDirective):
     """
 .. activecode:: uniqueid
-   :nocanvas: do not create a canvas
-   :autograde: normally set this to unittest
-   :nopre: do not create an output component
-   :above: put the canvas above the code
-   :autorun: run this activecode as soon as the page is loaded
-   :caption: caption under the active code
-   :include: invisibly include code from another activecode
-   :hidecode: Don:t show the editor initially
+   :nocanvas:  -- do not create a canvas
+   :autograde: unittest
+   :nopre: -- do not create an output component
+   :above: -- put the canvas above the code
+   :autorun: -- run this activecode as soon as the page is loaded
+   :caption: this is the caption
+   :include: div1,div2 -- invisibly include code from another activecode
+   :hidecode: -- Don't show the editor initially
+   :nocodelens: -- Do not show the codelens button
+   :timelimit: -- set the time limit for this program in seconds
    :language: python, html, javascript, java, python2, python3
    :tour_1: audio tour track
    :tour_2: audio tour track
    :tour_3: audio tour track
    :tour_4: audio tour track
    :tour_5: audio tour track
-   :nocodelens: Do not show the codelens button
-   :coach: Show the codecoach button
-   :timelimit: set the time limit for this program
    :stdin: : A file to simulate stdin (java, python2, python3)
    :datafile: : A datafile for the program to read (java, python2, python3)
    :sourcefile: : source files (java, python2, python3)
@@ -182,6 +184,10 @@ class ActiveCode(RunestoneDirective):
         'datafile' : directives.unchanged,
         'sourcefile' : directives.unchanged,
         'available_files' : directives.unchanged,
+        'compileargs': directives.unchanged,
+        'linkargs': directives.unchanged,
+        'interpreterargs': directives.unchanged,
+        'runargs': directives.unchanged,
     })
 
 
@@ -292,6 +298,12 @@ class ActiveCode(RunestoneDirective):
             self.options['sourcefile'] = ""
         else:
             self.options['sourcefile'] = "data-sourcefile='%s'" % self.options['sourcefile']
+
+        for opt,tp in [('compileargs','cargs'),('linkargs','largs'),('runargs','rargs'),('interpreterargs','iargs')]:
+            if opt in self.options:
+                self.options[tp] = 'data-{}="{}"'.format(opt, escape(self.options[opt]))
+            else:
+                self.options[tp] = ""
 
         if 'gradebutton' not in self.options:
             self.options['gradebutton'] = ''

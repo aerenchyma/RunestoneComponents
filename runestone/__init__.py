@@ -8,12 +8,12 @@ from .datafile import *
 from .disqus import *
 from .dragndrop import *
 from .fitb import *
-from .livecode import *
 from .meta import *
 from .parsons import *
 from .poll import *
 from .reveal import *
 from .shortanswer import *
+from .showeval import *
 from .tabbedStuff import *
 from .usageAssignment import *
 from .video import *
@@ -99,6 +99,7 @@ cmap = {'activecode': ActiveCode,
         'poll': Poll,
         'reveal': RevealDirective,
         'shortanswer': JournalDirective,
+        'showeval': ShowEval,
         'tabbed': TabbedStuffDirective,
         'tab': TabDirective,
         'video': Video,

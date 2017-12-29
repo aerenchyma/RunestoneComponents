@@ -218,7 +218,8 @@ MultipleChoice.prototype.renderMCFormButtons = function () {
     this.submitButton.textContent = "Check Me";
     $(this.submitButton).attr({
         "class": "btn btn-success",
-        "name": "do answer"
+        "name": "do answer",
+        "type": "button"
     });
     if (this.multipleanswers) {
         this.submitButton.addEventListener("click", function () {
@@ -294,11 +295,19 @@ MultipleChoice.prototype.restoreAnswers = function (data) {
             }
         }
     }
+    if (this.multipleanswers) {
+        this.processMCMASubmission(false);
+    } else {
+        this.processMCMFSubmission(false);
+    }
 };
 
 MultipleChoice.prototype.checkLocalStorage = function () {
     // Repopulates MCMA questions with a user's previous answers,
     // which were stored into local storage.
+    if (this.graderactive) {
+        return;
+    }
     var len = localStorage.length;
     if (len > 0) {
         var ex = localStorage.getItem(eBookConfig.email + ":" + this.divid + "-given");
@@ -392,7 +401,10 @@ MultipleChoice.prototype.scoreMCMASubmission = function () {
             correctIndex++;
         }
     }
-    this.correct = (this.correctCount == this.correctList.length);
+    var numGiven = this.givenArray.length;
+    var numCorrect = this.correctCount;
+    var numNeeded = this.correctList.length;
+    this.correct = (numCorrect === numNeeded) && (numNeeded === numGiven);
 };
 
 
@@ -415,7 +427,7 @@ MultipleChoice.prototype.renderMCMAFeedBack = function () {
     var numNeeded = this.correctList.length;
     var feedbackText = this.feedbackString;
 
-    if (numCorrect === numNeeded && numNeeded === numGiven) {
+    if (this.correct) {
         $(this.feedBackDiv).html('Correct.<ol type="A">' + feedbackText + "</ul>");
         $(this.feedBackDiv).attr("class", "alert alert-success");
     } else {
