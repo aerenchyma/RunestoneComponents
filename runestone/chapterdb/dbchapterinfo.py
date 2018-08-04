@@ -21,7 +21,7 @@ import re, datetime
 import os.path
 from collections import OrderedDict
 import docutils
-from sqlalchemy import Table, select, and_
+from sqlalchemy import Table, select, and_, or_
 from runestone.server.componentdb import engine, meta
 ignored_chapters = ["", "FrontBackMatter", "Appendices"]
 
@@ -67,21 +67,33 @@ def update_database(chaptitles, subtitles, app):
                                                chapter_id=str(currentRowId),
                                                sub_chapter_label=sub)
             engine.execute(ins)
-            sel = select([questions]).where(and_(questions.c.chapter == chap,
-                                              questions.c.subchapter == sub,
-                                              questions.c.question_type == 'page',
-                                              questions.c.base_course == basecourse))
+            # Three possibilities:
+            # 1) The chapter and subchapter labels match existing, but the q_name doesn't match; because you changed
+            # heading in a file.
+            # 2) The chapter and subchapter labels don't match (new file name), but there is an existing q_name match,
+            # because you renamed the file
+            # 3) Neither match, so insert a new question
+            sel = select([questions]).where(or_(and_(questions.c.chapter == chap,
+                                                     questions.c.subchapter == sub,
+                                                     questions.c.question_type == 'page',
+                                                     questions.c.base_course == basecourse),
+                                                and_(questions.c.name == q_name,
+                                                     questions.c.question_type == 'page',
+                                                     questions.c.base_course == basecourse))
+                                            )
             res = engine.execute(sel).first()
-            if res and res.name != q_name:
-                # In this case the title has changed
-                upd = questions.update().where(questions.c.id == res['id']).values(name=q_name)
+            if res and ((res.name != q_name) or (res.chapter != chap) or (res.subchapter !=sub)):
+                # Something changed
+                upd = questions.update().where(questions.c.id == res['id']).values(name=q_name,
+                                                                                   chapter = chap,
+                                                                                   subchapter = sub)
                 engine.execute(upd)
             if not res:
                 # this is a new subchapter
                 ins = questions.insert().values(chapter=chap, subchapter=sub,
                                             question_type='page',
                                             name=q_name,
-                                            timestamp=datetime.datetime.now(),   
+                                            timestamp=datetime.datetime.now(),
                                             base_course=basecourse)
                 engine.execute(ins)
 
@@ -108,8 +120,11 @@ def env_updated(app, env):
         for section in doctree.traverse(docutils.nodes.section):
             updated_docs.append(docname)
             title = section.next_node(docutils.nodes.Titular)
-            chap_id = os.path.dirname(docname)
-            subchap_id = os.path.basename(docname)
+            # ``docname`` is stored with Unix-style forward slashes, even on Windows. Therefore, we can't use ``os.path.basename`` or ``os.sep``.
+            splits = docname.split('/')
+            # If the docname is ``'index'``, then set ``chap_id`` to an empty string.
+            chap_id = splits[-2] if len(splits) > 1 else ''
+            subchap_id = splits[-1]
             if chap_id in ignored_chapters or subchap_id == "index" :
                 continue
             if chap_id not in chap_titles:
@@ -117,6 +132,8 @@ def env_updated(app, env):
                     chap_titles[chap_id] = title.astext()
                 else:
                     chap_titles[chap_id] = chap_id
+                    env.warn(docname, "Using a substandard chapter title")
+
             if chap_id not in subchap_titles:
                 subchap_titles[chap_id] = OrderedDict()
             if subchap_id not in subchap_titles[chap_id] and subchap_id != 'toctree':
